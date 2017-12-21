@@ -11,7 +11,7 @@ with open(path.join(here, 'VERSION.txt')) as version_file:
     version = version_file.read().strip()
     
 NAME = 'pracpred'
-DESCRIPTION = 'Modules used on practicallypredictable.com.'
+DESCRIPTION = 'Shared code used on practicallypredictable.com'
 URL = 'https://github.com/practicallypredictable/pracpredprob'
 EMAIL = 'practicallypredictable@practicallypredictable.com'
 AUTHOR = 'Practically Predictable'
