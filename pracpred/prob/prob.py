@@ -91,6 +91,8 @@ class Prob(Fraction):
 
     @staticmethod
     def _ratio_from_float(f):
+        # Credit to Matt Eding answer on StackOverflow:
+        #   https://stackoverflow.com/questions/23344185/how-to-convert-a-decimal-number-into-fraction
         if int(f) == f:
             return (int(f), 1)
         s = str(f)

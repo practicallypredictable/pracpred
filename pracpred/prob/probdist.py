@@ -3,7 +3,7 @@ from itertools import product, accumulate
 import random
 import numpy as np
 
-from . import Prob
+from .prob import Prob
 
 class ProbDist(Mapping):
     """A discrete finite probability distribution."""
