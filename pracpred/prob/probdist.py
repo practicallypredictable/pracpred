@@ -3,7 +3,7 @@ from itertools import product, accumulate
 import random
 import numpy as np
 
-from .prob import Prob
+from pracpred.prob import Prob
 
 class ProbDist(Mapping):
     """A discrete finite probability distribution."""
@@ -94,7 +94,7 @@ class ProbDist(Mapping):
         return ProbDist(result)
     
     @property
-    def pmf(self):
+    def zipped(self):
         """Return zipped probability mass function."""
         return zip(*sorted([(x[0], x[1]) for x in self._space.items()]))
 
