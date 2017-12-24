@@ -102,12 +102,14 @@ class Prob(Fraction):
         return (n, d)
 
     @staticmethod
-    def _format(numerator, denominator):
-        if isinstance(numerator, str) and not denominator:
-            numerator = numerator.replace(':', '/')
-        if isinstance(numerator, float) and not denominator:
-            numerator, denominator = Prob._ratio_from_float(numerator)
-        result = Fraction(numerator, denominator)
+    def _format(n, d):
+        if isinstance(n, str) and not d:
+            n = n.replace(':', '/')
+        if isinstance(n, float) and not d:
+            n, d = Prob._ratio_from_float(n)
+        if isinstance(n, float) and isinstance(d, float):
+            n, d = Prob._ratio_from_float(n/d)
+        result = Fraction(n, d)
         return (result, result.numerator, result.denominator)
 
     @staticmethod
