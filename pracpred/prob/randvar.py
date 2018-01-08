@@ -1,15 +1,16 @@
-from pracpred.prob import Prob, ProbDist
+from pracpred.prob import ProbDist
 import math
 import numbers
+
 
 class RandVar(ProbDist):
     """A univariate discrete finite random variable."""
 
-    slots = (
+    slots = [
         '_mean',
         '_var',
         '_stdev',
-    )
+    ]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -32,7 +33,7 @@ class RandVar(ProbDist):
     def var(self):
         """Variance."""
         if not self._var:
-            self._var = sum(self[x] * (x-self.mean)**2 for x in self)
+            self._var = sum(self[x] * (x - self.mean) ** 2 for x in self)
         return self._var
 
     @property
@@ -47,10 +48,9 @@ class RandVar(ProbDist):
         return sum(self[x] * func(x) for x in self)
 
     def moment(self, n):
-        """Nth momment."""
-        return sum(self[x] * x**n for x in self)
+        """Nth moment."""
+        return sum(self[x] * x ** n for x in self)
 
     def central_moment(self, n):
         """Nth central moment."""
-        return sum(self[x] * (x-self.mean)**n for x in self)
-
+        return sum(self[x] * (x - self.mean) ** n for x in self)

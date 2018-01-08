@@ -5,17 +5,18 @@ import numpy as np
 
 from pracpred.prob import Prob
 
+
 class ProbDist(Mapping):
     """A discrete finite probability distribution."""
 
-    __slots__ = (
+    __slots__ = [
         '_space',
         '_uniform',
         '_hash',
         '_sorted_elements',
         '_sorted_probs',
         '_sorted_cumprobs',
-    )
+    ]
 
     def __init__(self, *args, **kwargs):
         # Base distribution on Counter (i.e., multiset) data structure
@@ -52,7 +53,7 @@ class ProbDist(Mapping):
         return {x for x in self._space if condition_true_for(x)}
 
     def exclude(self, event):
-        """Renormalized probabilty distribution after removing an event."""
+        """Renormalized probability distribution after removing an event."""
         return ProbDist({x: self._space[x] for x in self._space if x not in self.subset_such_that(event)})
 
     def joint(self, other, key_type=None, separator=''):
@@ -70,7 +71,7 @@ class ProbDist(Mapping):
     def repeated(self, repeat, key_type=None, separator=''):
         """Joint distribution of repeated independent trials."""
         result = ProbDist(self)
-        for _ in range(int(repeat)-1):
+        for _ in range(int(repeat) - 1):
             result = result.joint(self, key_type, separator)
         return result
 
@@ -176,7 +177,7 @@ class ProbDist(Mapping):
                 else:
                     return (e1,) + e2
             else:
-                return (e1, e2)
-        except:
+                return e1, e2
+        except TypeError:
             # default to tuple if nothing else works
-            return (e1, e2)
+            return e1, e2
