@@ -7,66 +7,54 @@ from pracpred.prob import Prob
 
 class ProbDist(Mapping):
     """A discrete finite probability distribution."""
-    
-    __slots__ = [
+
+    __slots__ = (
         '_space',
         '_uniform',
         '_hash',
-        '_sorted_outcomes',
+        '_sorted_elements',
         '_sorted_probs',
-        '_sorted_sumprobs',
-    ]
-    
+        '_sorted_cumprobs',
+    )
+
     def __init__(self, *args, **kwargs):
         # Base distribution on Counter (i.e., multiset) data structure
         # See Allen Downey blog post at:
         #   https://allendowney.blogspot.com/2014/05/implementing-pmfs-in-python.html
         self._space = Counter(*args, **kwargs)
         total = sum(self._space.values())
-        # Check if all probabilities are equal (uniform distribution)
-        # Start off assuming uniform
         self._uniform = True
-        last_prob = None
-        for event in self._space:
-            # Normalize probabilities to sum to 1
-            prob = Prob(self._space[event], total)
-            self._space[event] = prob
-            if last_prob is None:
-                # First event so nothing to compare to
-                last_prob = prob
-            # As soon as we find a different probability value, we know
-            # the distribution isn't uniform and we can stop checking
+        prior_value = None
+        for element in self._space:
+            p = Prob(self._space[element], total)
+            self._space[element] = p
+            if prior_value is None:
+                prior_value = p
             elif self._uniform:
-                self._uniform = (prob == last_prob)
+                self._uniform = (p == prior_value)
         self._hash = None
-        self._sorted_outcomes = None
+        self._sorted_elements = None
         self._sorted_probs = None
-        self._sorted_sumprobs = None
-    
-    def prob(self, predicate):
+        self._sorted_cumprobs = None
+
+    def prob(self, event):
         """Probability of an event."""
-        outcomes = self._satisfying(predicate)
-        return Prob(
-            sum(self._space[x] for x in self._space if x in outcomes)
-        )
-    
-    def subset(self, predicate):
-        """Sample space subset satisfying a predicate."""
-        return {x for x in self._space if predicate(x)}
- 
-    def such_that(self, predicate):
-        """Distribution of sample space subset satisfying a predicate."""
-        outcomes = self._satisfying(predicate)
-        return ProbDist(
-            {x: self._space[x] for x in self._space if x in outcomes}
-        )
-    
-    def remove(self, events):
-        """Renormalized probabilty distribution with certain events removed."""
-        return ProbDist(
-            {x: self._space[x] for x in self._space if x not in events}
-        )
-    	 
+        if callable(event):
+            event = self.subset_such_that(event)
+        return Prob(sum(self._space[x] for x in self._space if x in event))
+
+    def such_that(self, condition_true_for):
+        """Distribution of sample space subset satisfying a condition."""
+        return ProbDist({x: self._space[x] for x in self._space if condition_true_for(x)})
+
+    def subset_such_that(self, condition_true_for):
+        """Sample space subset satisfying a condition."""
+        return {x for x in self._space if condition_true_for(x)}
+
+    def exclude(self, event):
+        """Renormalized probabilty distribution after removing an event."""
+        return ProbDist({x: self._space[x] for x in self._space if x not in self.subset_such_that(event)})
+
     def joint(self, other, key_type=None, separator=''):
         """Joint distribution with an independent distribution."""
         result = Counter()
@@ -78,21 +66,21 @@ class ProbDist(Mapping):
     def __add__(self, other):
         """Joint distribution of the sum with an independent distribution."""
         return self.joint(other)
-    
+
     def repeated(self, repeat, key_type=None, separator=''):
         """Joint distribution of repeated independent trials."""
         result = ProbDist(self)
         for _ in range(int(repeat)-1):
             result = result.joint(self, key_type, separator)
         return result
-    
+
     def groupby(self, key=None):
         """Distribution of events grouped by a key."""
         result = Counter()
         for x in self._space:
             result.update({key(x): self[x]})
         return ProbDist(result)
-    
+
     @property
     def zipped(self):
         """Return zipped probability mass function."""
@@ -101,56 +89,55 @@ class ProbDist(Mapping):
     @property
     def is_uniform(self):
         return self._uniform
-    
+
+    @staticmethod
+    def random_seed(seed=1):
+        random.seed(seed)
+        np.random.seed(seed)
+
     def choice(self):
         """Draw an outcome with replacement."""
         return self.choices(1)[0]
-        
+
     def choices(self, k):
-        """Draw a list of one or more outcomes with replacement."""
-        if not self._sorted_outcomes:
+        """Draw one or more outcomes with replacement."""
+        if not self._sorted_elements:
             self._setup_sampling()
-        weights = self._sorted_sumprobs if self.is_uniform else None
-        return random.choices(self._sorted_outcomes, cum_weights=weights, k=k)
-    
+        weights = self._sorted_cumprobs if not self.is_uniform else None
+        return random.choices(self._sorted_elements, cum_weights=weights, k=k)
+
     def sample(self, k=1):
-        """Sample without replacement from distribution."""
-        if not self._sorted_outcomes:
+        """Sample without replacement."""
+        if not self._sorted_elements:
             self._setup_sampling()
         if self.is_uniform:
-            return random.sample(self._sorted_outcomes, k=k)
+            return random.sample(self._sorted_elements, k=k)
         else:
             return list(np.random.choice(
-                self._sorted_outcomes,
+                self._sorted_elements,
                 p=self._sorted_probs,
                 size=k,
                 replace=False,
             ))
-    
-    def most_likely(self, n=1):
-        """List of n-most likely outcomes ranked in descending order."""
-        if not self._sorted_outcomes:
-            self._setup_sampling()
-        return self._sorted_outcomes[:n]
 
     def __getitem__(self, outcome):
         return self._space[outcome]
-        
+
     def __len__(self):
         return len(self._space)
-        
+
     def __contains__(self, event):
         return event in self._space
- 
+
     def __iter__(self):
         return iter(self._space)
-        
+
     def __repr__(self):
         s = ', '.join('{outcome}: {prob}'.format(
             outcome=repr(k), prob=repr(v)
         ) for k, v in sorted(self._space.items()))
         return f'{self.__class__.__name__}' + '({' + s + '})'
-    
+
     def __str__(self):
         s = ', '.join('{outcome}: {prob}'.format(
             outcome=str(k), prob=str(v)
@@ -161,31 +148,19 @@ class ProbDist(Mapping):
         if self._hash is None:
             self._hash = hash(frozenset(self._space.items()))
         return self._hash
-    
+
+    def copy(self):
+        return ProbDist(self._space.copy())
+
     # Private helper functions
-            
-    def _satisfying(self, predicate):
-        if callable(predicate):
-            return self.subset(predicate)
-        else:
-            return set(predicate)
-    
+
     def _setup_sampling(self):
-        if self.is_uniform:
-            self._sorted_outcomes = list(self._space)
-        else:
-            self._sorted_outcomes = sorted(
-                self._space,
-                key=self._space.get,
-                reverse=True,
-            )
-            self._sorted_probs = [
-                self._space[x] for x in self._sorted_outcomes
-            ]
-            self._sorted_sumprobs = [
-                Prob(x) for x in list(accumulate(self._sorted_probs))
-            ]
-    
+        # sort descending by probability
+        # do this even for uniform distributions even thought sorting doesn't matter
+        self._sorted_elements = sorted(self._space, key=self._space.get, reverse=True)
+        self._sorted_probs = [self._space[x] for x in self._sorted_elements]
+        self._sorted_cumprobs = [Prob(x) for x in list(accumulate(self._sorted_probs))]
+
     @staticmethod
     def _key(e1, e2, key_type=None, separator=''):
         try:

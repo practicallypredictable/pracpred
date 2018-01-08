@@ -1,14 +1,14 @@
 import math
+import numbers
 from fractions import Fraction
 
 class Prob(Fraction):
     """Representation of a probability."""
 
     # There are no attributes for a probability other than the fraction value
-    __slots__ = []
+    __slots__ = ()
 
     def __new__(cls, numerator=0, denominator=None):
-        """Create a new probability with a value between 0 and 1 inclusive."""
         p, n, d = Prob._format(numerator, denominator)
         if p < 0:
             raise ValueError('Prob cannot be negative')
@@ -16,26 +16,65 @@ class Prob(Fraction):
             raise ValueError('Prob cannot be greater than one')
         return super().__new__(cls, p)
 
+    def __add__(self, other):
+        if isinstance(other, Prob):
+            return Prob(self.numerator * other.denominator +
+                        self.denominator * other.numerator,
+                        self.denominator * other.denominator)
+        else:
+            return Fraction(self) + other
+
+    __radd__ = __add__
+
+    def __sub__(self, other):
+        if isinstance(other, numbers.Number) and int(other) == 1:
+            other = Prob(1)
+        if isinstance(other, Prob):
+            return Prob(self.numerator * other.denominator -
+                        self.denominator * other.numerator,
+                        self.denominator * other.denominator)
+        else:
+            return Fraction(self) - other
+
+    def __rsub__(self, other):
+        if isinstance(other, numbers.Number) and int(other) == 1:
+            other = Prob(1)
+        if isinstance(other, Prob):
+            return Prob(other.numerator * self.denominator -
+                        other.denominator * self.numerator,
+                        other.denominator * self.denominator)
+        else:
+            return other - Fraction(self)
+
+    def __mul__(self, other):
+        if isinstance(other, Prob):
+            return Prob(self.numerator * other.numerator,
+                        self.denominator * other.denominator)
+        else:
+            return Fraction(self) * other
+
+    __rmul__ = __mul__
+
     @property
     def fractional_odds_against(self):
         """Express the probability as fractional odds against."""
         return Fraction(1/self - 1) if self > 0 else math.inf
-    
+
     @property
     def fractional_odds_on(self):
         """Express the probability as fractional odds on."""
         return 1/self.fractional_odds_against
-    
+
     @property
     def decimal_odds_against(self):
         """Express the probabilty as decimal odds against."""
         return Fraction(1/self) if self > 0 else math.inf
-    
+
     @property
     def decimal_odds_on(self):
         """Express the probability as decimal odds on."""
         return 1/self.decimal_odds_against
-    
+
     @property
     def moneyline_odds_against(self):
         """Express the probability as moneyline odds against."""
@@ -52,19 +91,19 @@ class Prob(Fraction):
     def moneyline_odds_on(self):
         """Express the probability as moneyline odds on."""
         return 1/self.moneyline_odds_against
-    
+
     @classmethod
     def from_fractional_odds_against(cls, numerator=0, denominator=None):
         """Create a probability from fractional odds against."""
         n, d = cls._format_fractional(numerator, denominator)
         return cls(d, n+d)
-    
+
     @classmethod
     def from_fractional_odds_on(cls, numerator=0, denominator=None):
         """Create a probability from fractional odds on."""
         n, d = cls._format_fractional(numerator, denominator)
         return cls(n, n+d)
-        
+
     @classmethod
     def from_decimal_odds_against(cls, numerator=0, denominator=None):
         """Create a probability from decimal odds against."""
@@ -125,7 +164,7 @@ class Prob(Fraction):
         if odds <= 0:
             raise ValueError('Decimal odds must be positive')
         return (n, d)
-        
+
     @staticmethod
     def _format_moneyline(n, d):
         odds, n, d = Prob._format(n, d)
