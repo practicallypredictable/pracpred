@@ -9,15 +9,16 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 
 with open(path.join(here, 'VERSION.txt')) as version_file:
     version = version_file.read().strip()
-    
+
 NAME = 'pracpred'
-DESCRIPTION = 'Shared code used on practicallypredictable.com'
+DESCRIPTION = 'Shared code used on practicallypredictable.com.'
 URL = 'https://github.com/practicallypredictable/pracpredprob'
 EMAIL = 'practicallypredictable@practicallypredictable.com'
 AUTHOR = 'Practically Predictable'
-LICENSE = 'MIT' # Change trove classifier below if using a different license
+LICENSE = 'MIT'  # Change trove classifier below if using a different license
 
 REQUIRED = [
+    'numpy',
 ]
 
 setup(
