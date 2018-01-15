@@ -1,5 +1,5 @@
 from collections import Counter, Mapping
-from itertools import product, accumulate
+import itertools as it
 import random
 import numpy as np
 
@@ -56,11 +56,11 @@ class ProbDist(Mapping):
         """Renormalized probability distribution after removing an event."""
         return ProbDist({x: self._space[x] for x in self._space if x not in self.subset_such_that(event)})
 
-    def joint(self, other, key_type=None, separator=''):
+    def joint(self, other, product=False, separator=''):
         """Joint distribution with an independent distribution."""
         result = Counter()
-        for (e1, e2) in product(self, other):
-            key = ProbDist._key(e1, e2, key_type, separator)
+        for (e1, e2) in it.product(self, other):
+            key = ProbDist._key(e1, e2, product, separator)
             result[key] += self[e1] * other[e2]
         return ProbDist(result)
 
@@ -68,11 +68,11 @@ class ProbDist(Mapping):
         """Joint distribution of the sum with an independent distribution."""
         return self.joint(other)
 
-    def repeated(self, repeat, key_type=None, separator=''):
+    def repeated(self, repeat, product=False, separator=''):
         """Joint distribution of repeated independent trials."""
         result = ProbDist(self)
         for _ in range(int(repeat) - 1):
-            result = result.joint(self, key_type, separator)
+            result = result.joint(self, product, separator)
         return result
 
     def groupby(self, key=None):
@@ -164,14 +164,14 @@ class ProbDist(Mapping):
         # do this even for uniform distributions even thought sorting doesn't matter
         self._sorted_elements = sorted(self._space, key=self._space.get, reverse=True)
         self._sorted_probs = [self._space[x] for x in self._sorted_elements]
-        self._sorted_cumprobs = [Prob(x) for x in list(accumulate(self._sorted_probs))]
+        self._sorted_cumprobs = [Prob(x) for x in list(it.accumulate(self._sorted_probs))]
 
     @staticmethod
-    def _key(e1, e2, key_type=None, separator=''):
+    def _key(e1, e2, product=False, separator=''):
         try:
             if separator:
                 return str(e1) + separator + str(e2)
-            elif key_type != tuple:
+            elif not product:
                 return e1 + e2
             elif any([isinstance(x, tuple) for x in [e1, e2]]):
                 if isinstance(e1, tuple) and isinstance(e2, tuple):
