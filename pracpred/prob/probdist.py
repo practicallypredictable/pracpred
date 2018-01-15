@@ -82,6 +82,10 @@ class ProbDist(Mapping):
             result.update({key(x): self[x]})
         return ProbDist(result)
 
+    def most_common(self, k=1):
+        """Most common elements."""
+        return self._space.most_common(k)
+
     @property
     def zipped(self):
         """Return zipped probability mass function."""
