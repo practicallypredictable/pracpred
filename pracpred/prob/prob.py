@@ -133,9 +133,10 @@ class Prob(Fraction):
     def _ratio_from_float(f):
         # Credit to Matt Eding answer on StackOverflow:
         #   https://stackoverflow.com/questions/23344185/how-to-convert-a-decimal-number-into-fraction
+        # Modified to correctly handle scientific notation 2/19/18
         if int(f) == f:
             return int(f), 1
-        s = str(f)
+        s = str(f'{f:.12f}')
         s = s.split('.')
         n = int(''.join(s))
         d = 10 ** len(s[1])
