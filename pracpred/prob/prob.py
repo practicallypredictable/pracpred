@@ -134,9 +134,22 @@ class Prob(Fraction):
         # Credit to Matt Eding answer on StackOverflow:
         #   https://stackoverflow.com/questions/23344185/how-to-convert-a-decimal-number-into-fraction
         # Modified to correctly handle scientific notation 2/19/18
+        # Credit to user Karin answer on StackOverflow:
+        #   https://stackoverflow.com/questions/38847690/convert-float-to-string-without-scientific-notation-and-false-precision
+        # Some modifications to her answer
         if int(f) == f:
             return int(f), 1
-        s = str(f'{f:.12f}')
+        s = repr(f)
+        if 'e' in s: # scientific notation
+            sign = '-' if f < 0 else ''
+            digits, exponent = s.split('e')
+            exponent = int(exponent)
+            digits = digits.replace('.', '').replace('-', '')
+            padding = '0' * (abs(exponent)-1)
+            if exponent > 0:
+                s = f'{sign}{digits}{padding}.0'
+            else:
+                s = f'{sign}0.{padding}{digits}'
         s = s.split('.')
         n = int(''.join(s))
         d = 10 ** len(s[1])
