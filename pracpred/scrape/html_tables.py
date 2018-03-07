@@ -27,8 +27,19 @@ class HTMLTable():
 
     @property
     def rows(self):
-        """First-level rows of HTML table, to avoid problems with nested tables."""
-        return [child for child in self.soup.children if child.name == 'tr']
+        """All top-level rows of HTML table."""
+        results = list()
+        children = [
+            child for child in self.soup.children if child.name in [
+                'tr', 'thead', 'tbody',
+            ]
+        ]
+        for child in children:
+            if child.name in ['thead', 'tbody',]:
+                results.extend([row for row in child.find_all('tr')])
+            else:
+                results.append(child)
+        return results
         
     def unspan(self, soup=False, repeat_span=False):
         """Text or HTML from table, removing rowspan/colspan structure."""
