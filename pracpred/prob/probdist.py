@@ -10,6 +10,7 @@ class ProbDist(Mapping):
     """A discrete finite probability distribution."""
 
     __slots__ = [
+        '_name',
         '_space',
         '_uniform',
         '_hash',
@@ -22,6 +23,7 @@ class ProbDist(Mapping):
         # Base distribution on Counter (i.e., multiset) data structure
         # See Allen Downey blog post at:
         #   https://allendowney.blogspot.com/2014/05/implementing-pmfs-in-python.html
+        self._name = None
         self._space = Counter(*args, **kwargs)
         total = sum(self._space.values())
         self._uniform = True
@@ -46,7 +48,7 @@ class ProbDist(Mapping):
 
     def such_that(self, condition_true_for):
         """Distribution of sample space subset satisfying a condition."""
-        return ProbDist({x: self._space[x] for x in self._space if condition_true_for(x)})
+        return self.__class__({x: self._space[x] for x in self._space if condition_true_for(x)})
 
     def subset_such_that(self, condition_true_for):
         """Sample space subset satisfying a condition."""
@@ -54,15 +56,17 @@ class ProbDist(Mapping):
 
     def exclude(self, event):
         """Renormalized probability distribution after removing an event."""
-        return ProbDist({x: self._space[x] for x in self._space if x not in self.subset_such_that(event)})
+        return self.__class__({x: self._space[x] for x in self._space if x not in self.subset_such_that(event)})
 
     def joint(self, other, product=False, separator=''):
         """Joint distribution with an independent distribution."""
+        if not isinstance(other, ProbDist):
+            return NotImplemented
         result = Counter()
         for (e1, e2) in it.product(self, other):
             key = ProbDist._key(e1, e2, product, separator)
             result[key] += self[e1] * other[e2]
-        return ProbDist(result)
+        return self.__class__(result)
 
     def __add__(self, other):
         """Joint distribution of the sum with an independent distribution."""
@@ -70,7 +74,7 @@ class ProbDist(Mapping):
 
     def repeated(self, repeat, product=False, separator=''):
         """Joint distribution of repeated independent trials."""
-        result = ProbDist(self)
+        result = self.__class__(self)
         for _ in range(int(repeat) - 1):
             result = result.joint(self, product, separator)
         return result
@@ -80,7 +84,7 @@ class ProbDist(Mapping):
         result = Counter()
         for x in self._space:
             result.update({key(x): self[x]})
-        return ProbDist(result)
+        return self.__class__(result)
 
     def most_common(self, k=1):
         """Most common elements."""
@@ -125,6 +129,14 @@ class ProbDist(Mapping):
                 replace=False,
             ))
 
+    @property
+    def name(self):
+        return self._name
+
+    @name.setter
+    def name(self, name):
+        self._name = name
+
     def __getitem__(self, outcome):
         return self._space[outcome]
 
@@ -147,7 +159,10 @@ class ProbDist(Mapping):
         s = ', '.join('{outcome}: {prob}'.format(
             outcome=str(k), prob=str(v)
         ) for k, v in sorted(self._space.items()))
-        return '{' + s + '}'
+        if self._name:
+            return str(self._name) + ' = {' + s + '}'
+        else:
+            return '{' + s + '}'
 
     def __hash__(self):
         if self._hash is None:
@@ -155,7 +170,7 @@ class ProbDist(Mapping):
         return self._hash
 
     def copy(self):
-        return ProbDist(self._space.copy())
+        return self.__class__(self._space.copy())
 
     # Private helper functions
 
