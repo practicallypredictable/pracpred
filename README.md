@@ -1,2 +1,3 @@
 # pracpred
-Shared code used on practicallypredictable.com
+
+Shared code used for posts at http://practicallypredictable.com/
